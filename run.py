@@ -101,9 +101,36 @@ def main():
             )
             eval.main(eval_config)
 
-            res_json = json.load(open(eval_output_path))
+            if model_config_args:
+                config = json.loads(_jsonnet.evaluate_file(model_config_file, tla_codes={'args': model_config_args}))
+            else:
+                config = json.loads(_jsonnet.evaluate_file(model_config_file))
+
+            if 'model_name' in config:
+                import os
+                real_logdir = os.path.join(logdir, config['model_name'])
+            res_json = json.load(open(eval_output_path.replace('__LOGDIR__', real_logdir)))
             print(step, res_json['total_scores']['all']['exact'])
 
 
 if __name__ == "__main__":
+    # third_party path is added to sys.path; otherwise, do
+    # export PYTHONPATH=$(pwd -P)/third_party/wikisql:$PYTHONPATH
+
+    # python run.py <step.py> <experiment_config_file>
+    
+    # mode = 'preprocess'  # Step 3a: preprocess the data
+    mode = 'train'       # Step 3b: train a model
+    # mode = 'eval'        # Step 3b: evaluate the results
+
+    # Use the following experiment config files to reproduce our results:
+    # config_file = 'experiments/debug-spider-glove-run.jsonnet'
+    # config_file = 'experiments/spider-glove-run.jsonnet' # Spider, GloVE version
+    # config_file = 'experiments/spider-bert-run.jsonnet' # Spider, BERT version (requires a GPU with at least 16GB memory)
+    config_file = 'experiments/wikisql-glove-run.jsonnet' # WikiSQL, GloVE version
+    
+    import sys
+    sys.argv += [mode, config_file]
+    print(sys.argv)
+
     main()
